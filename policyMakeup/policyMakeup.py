@@ -1,3 +1,4 @@
+#encoding:cp936
 import pymouse
 import pykeyboard
 import win32clipboard as cb
