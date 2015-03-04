@@ -1,3 +1,4 @@
+#coding:cp936
 import pymouse
 import pykeyboard
 import win32clipboard as cb
@@ -18,8 +19,8 @@ def paste():
     cb.CloseClipboard()
     return data
 
-def click_commit():
-    mouse.click(g.btnCommitPos[0],g.btnCommitPos[1])
+def click_confirm():
+    mouse.click(g.btnConfirmPos[0],g.btnConfirmPos[1])
 
 def click_paste(position,text):
     mouse.click(position[0],position[1])
@@ -44,17 +45,27 @@ def iter_paste():
         click_paste(v,data)
         time.sleep(0.5)
 
-    click_commit()
+    click_confirm()
 
 class g(object):
     boxPos = {}
     boxValue = {}
-    btnCommitPos = []
+    btnConfirmPos = [763,653] # 确定按钮的位置
 
 g.boxPos = {
     # 该字典容纳保单录入各项在页面中的位置
 
-    'Voucherid':[555,100] # 单证号
-
+    'voucherid':[575,204] # 单证号码
+    'bdid':[1035,200] # 保单号
+    'posid':[543,229] # 终端ID
+    'policyid':[1027,229] # 业务方案代码
+    'saledate':[540,258] # 销售日期
+    'startdate':[531,282] # 保险起期
+    'enddate':[1027,285] # 保险终期
+    'operid':[576,313] # 操作员id
+    'opername':[1023,312] # 操作员姓名
+    'feeamt':[1017,338] # 保费（分）
+    'tbrname':[534,365] # 投保人姓名
+    'tbridno':[1022,391] # 投保人证件号码
     }
 
