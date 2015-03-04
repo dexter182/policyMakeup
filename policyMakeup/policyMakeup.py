@@ -25,9 +25,9 @@ def click_confirm():
 def click_paste(position,text):
     mouse.click(position[0],position[1])
     copy(text)
-    kb.press_key(kb.control_key)
+    kb.press_key(kb.control_l_key)
     kb.tap_key('v')
-    kb.release_key(kb.control_key)
+    kb.release_key(kb.control_l_key)
 
 def init_values():
     """ 返回一个值为空的输入项字典 """
@@ -54,18 +54,22 @@ class g(object):
 
 g.boxPos = {
     # 该字典容纳保单录入各项在页面中的位置
-
-    'voucherid':[575,204] # 单证号码
-    'bdid':[1035,200] # 保单号
-    'posid':[543,229] # 终端ID
-    'policyid':[1027,229] # 业务方案代码
-    'saledate':[540,258] # 销售日期
-    'startdate':[531,282] # 保险起期
-    'enddate':[1027,285] # 保险终期
-    'operid':[576,313] # 操作员id
-    'opername':[1023,312] # 操作员姓名
-    'feeamt':[1017,338] # 保费（分）
-    'tbrname':[534,365] # 投保人姓名
+    'voucherid':[575,204], # 单证号码
+    'bdid':[1035,200], # 保单号
+    'posid':[543,229], # 终端ID
+    'policyid':[1027,229], # 业务方案代码
+    'saledate':[540,258], # 销售日期
+    'startdate':[531,282], # 保险起期
+    'enddate':[1027,285], # 保险终期
+    'operid':[576,313], # 操作员id
+    'opername':[1023,312], # 操作员姓名
+    'feeamt':[1017,338], # 保费（分）
+    'tbrname':[534,365], # 投保人姓名
     'tbridno':[1022,391] # 投保人证件号码
     }
 
+#init_values()
+#for k,v in g.boxValue.items():
+#    g.boxValue[k]='3123'
+#time.sleep(3)
+#iter_paste()
