@@ -1,3 +1,5 @@
+#coding:utf-8
+import cx_Oracle
 import pymouse
 import pykeyboard
 import win32clipboard as cb
@@ -6,13 +8,21 @@ import xml.etree.ElementTree as ET
 import fileinput
 import re
 
+l=0
+#utf8_encode = lambda x: x.encode("utf8") if type(x) == unicode else x
+#utf8_decode = lambda x: x.decode("utf8") if type(x) == str else x
+#cp_encode = lambda x: x.encode("GB2312") if type(x) == unicode else x
+#cp_decode = lambda x: x.decode("GB2312") if type(x) == str else x
+
 mouse = pymouse.PyMouse()
 kb = pykeyboard.PyKeyboard()
+conn = cx_Oracle.connect("pos/qwer1234!@10.24.57.50/gretms")
+
 
 def copy(text):
     cb.OpenClipboard()
     cb.EmptyClipboard()
-    cb.SetClipboardText(text)
+    cb.SetClipboardText(text,cb.CF_UNICODETEXT)
     cb.CloseClipboard()
 
 def paste():
@@ -27,9 +37,14 @@ def click_confirm():
 def click_paste(position,text):
     mouse.click(position[0],position[1])
     copy(text)
-    kb.press_key(kb.control_l_key)
-    kb.tap_key('v')
-    kb.release_key(kb.control_l_key)
+    time.sleep(0.2)
+    #kb.press_key(kb.control_l_key)
+    #kb.tap_key('v')
+    #kb.release_key(kb.control_l_key)
+    mouse.click(position[0],position[1],2)
+    time.sleep(0.2)
+    kb.tap_key('p')
+
 
 def init_values():
     """ 返回一个值为空的输入项字典 """
@@ -45,7 +60,7 @@ def iter_paste():
     for k,v in g.boxPos.items():
         data = g.boxValue[k]
         click_paste(v,data)
-        time.sleep(0.5)
+        time.sleep(1)
 
     click_confirm()
 
@@ -58,12 +73,19 @@ def change_xml_head(line):
     return 0
 
 
+
 def parse_xml(logfile):
     """ 解析日志 """
     for line in fileinput.input(logfile):
+        cur = conn.cursor()
+        g.boxValue = init_values()
         line = change_xml_head(line)
         if line:
-            tree = ET.fromstring(line)
+            print '-------------------------------------------------'
+            f=open(g.tempxml,'w')
+            f.write(line)
+            f.close()
+            tree = ET.parse(g.tempxml)
             root = tree.getroot()
             for info_tag in root:
                 for child in info_tag:
@@ -71,10 +93,31 @@ def parse_xml(logfile):
             g.boxValue['posid'] = g.tag['POS_ID']
             g.boxValue['operid'] =  g.tag['OPER_ID']
             g.boxValue['opername'] = g.tag['OPER_NAME']
-            parse_cdate(g.tag['REC_LIST'])
-        init_values()
-        time.sleep(3)
-        iter_paste()
+            parse_cdata(g.tag['REC_LIST'])
+            if g.boxValue['tbrname'] == '':
+                g.boxValue['tbrname'] = '0'
+                g.boxValue['tbridno'] = '0'
+            print "g.boxValue"
+            print g.boxValue
+            g.boxValue['voucherid'] = str(g.boxValue['voucherid'])
+            sql = g.select_sql+"'"+g.boxValue['voucherid']+"'"
+            cur.execute(sql)
+            for row in cur:
+                result = row[0]
+            print "数据库中查询voucherid：",g.boxValue['voucherid'],
+
+            if result == g.boxValue['voucherid']:
+                print result,'已存在，略过'
+            else:
+                print result,
+                print '没有，补单'
+                time.sleep(3)
+                iter_paste()
+                time.sleep(1)
+                mouse.click(g.success_btn[0],g.success_btn[1])
+                clear_box()
+            
+
 
 def parse_cdata(cdata):
     data = cdata.split('/')
@@ -108,29 +151,41 @@ def trans_date(date_str):
     sec = match.group(6)
     return year+'-'+month+'-'+day+' '+hour+':'+min+':'+sec
 
+def clear_box():
+    mouse.click(g.last_page[0],g.last_page[1])
+    time.sleep(1)
+    mouse.click(g.main_page[0],g.main_page[1])
+
 class g(object):
     boxPos = {}
     boxValue = {}
-    btnConfirmPos = [763,653] # 确定按钮的位置
+    btnConfirmPos = [777,612] # 确定按钮的位置
+    success_btn = [719,429]
     loghead_pat = re.compile(r".*\[com.pos.http.dao.impl.DB_SALEDAOImpl\]-<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>")
     xml_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-    logfile = r"d:\tcweb0302a.log"
+    logfile = r"d:\hehe.xml"
+    tempxml = r".\temp.xml"
     tag = {}
+    value_null = [684,421] # 提交后报错“单证号不能为空”
+    select_sql = "select s_voucherid from sp_bdsalelist where s_voucherid ="
+    last_page = [115,359]
+    main_page = [107,378]
+
 
 g.boxPos = {
     # 该字典容纳保单录入各项在页面中的位置
-    'voucherid':[575,204], # 单证号码
-    'bdid':[1035,200], # 保单号
-    'posid':[543,229], # 终端ID
-    'policyid':[1027,229], # 业务方案代码
-    'saledate':[540,258], # 销售日期
-    'startdate':[531,282], # 保险起期
-    'enddate':[1027,285], # 保险终期
-    'operid':[576,313], # 操作员id
-    'opername':[1023,312], # 操作员姓名
-    'feeamt':[1017,338], # 保费（分）
-    'tbrname':[534,365], # 投保人姓名
-    'tbridno':[1022,391] # 投保人证件号码
+    'voucherid':[535,164], # 单证号码
+    'bdid':[1063,171], # 保单号
+    'posid':[523,193], # 终端ID
+    'policyid':[1043,196], # 业务方案代码
+    'saledate':[562,220], # 销售日期
+    'startdate':[523,250], # 保险起期
+    'enddate':[1029,245], # 保险终期
+    'operid':[572,275], # 操作员id
+    'opername':[1036,274], # 操作员姓名
+    'feeamt':[1057,297], # 保费（分）
+    'tbrname':[543,327], # 投保人姓名
+    'tbridno':[1024,357] # 投保人证件号码
     }
 
 #init_values()
@@ -138,4 +193,4 @@ g.boxPos = {
 #    g.boxValue[k]='3123'
 #time.sleep(3)
 #iter_paste()
-parse_xml()
+parse_xml(g.logfile)
