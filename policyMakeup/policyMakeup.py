@@ -1,4 +1,4 @@
-#coding:utf-8
+#coding:cp936
 import cx_Oracle
 import pymouse
 import pykeyboard
@@ -8,7 +8,6 @@ import xml.etree.ElementTree as ET
 import fileinput
 import re
 
-l=0
 #utf8_encode = lambda x: x.encode("utf8") if type(x) == unicode else x
 #utf8_decode = lambda x: x.decode("utf8") if type(x) == str else x
 #cp_encode = lambda x: x.encode("GB2312") if type(x) == unicode else x
@@ -96,12 +95,14 @@ def parse_xml(logfile):
             parse_cdata(g.tag['REC_LIST'])
             if g.boxValue['tbrname'] == '':
                 g.boxValue['tbrname'] = '0'
+            if g.boxValue['tbridno'] == '':
                 g.boxValue['tbridno'] = '0'
             print "g.boxValue"
             print g.boxValue
             g.boxValue['voucherid'] = str(g.boxValue['voucherid'])
-            sql = g.select_sql+"'"+g.boxValue['voucherid']+"'"
-            cur.execute(sql)
+            sql1 = g.select_sql+"'"+g.boxValue['voucherid']+"'"
+            sql2 = "select s_regposid from vc_voucherinfo where s_voucherid ="+"'"+g.boxValue['voucherid']+"'"
+            cur.execute(sql1)
             for row in cur:
                 result = row[0]
             print "数据库中查询voucherid：",g.boxValue['voucherid'],
@@ -109,13 +110,19 @@ def parse_xml(logfile):
             if result == g.boxValue['voucherid']:
                 print result,'已存在，略过'
             else:
-                print result,
-                print '没有，补单'
-                time.sleep(3)
-                iter_paste()
-                time.sleep(1)
-                mouse.click(g.success_btn[0],g.success_btn[1])
-                clear_box()
+                cur.execute(sql2)
+                for row in cur:
+                    lock = row[0]
+                    if lock:
+                        print "单证被锁"
+                    else:
+                        print result,
+                        print '没有，补单'
+                        time.sleep(3)
+                        iter_paste()
+                        time.sleep(1)
+                        mouse.click(g.success_btn[0],g.success_btn[1])
+                        clear_box()
             
 
 
